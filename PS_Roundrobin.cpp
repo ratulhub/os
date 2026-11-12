@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 
 int main() {
@@ -6,33 +7,48 @@ int main() {
     printf("Enter the number of processes: ");
     scanf("%d", &n);
 
+    if (n <= 0 || n > 100) {
+        printf("Invalid number of processes");
+        return 0;
+    }
+
     int process[n], arrival[n], burst[n], remaining[n], completion[n];
     int waiting[n], turnaround[n];
 
-    // ----- Input process details -----
     for (i = 0; i < n; i++) {
         process[i] = i + 1;
+
         printf("Enter arrival time of process %d: ", process[i]);
         scanf("%d", &arrival[i]);
+
         printf("Enter burst time of process %d: ", process[i]);
         scanf("%d", &burst[i]);
 
-        remaining[i] = burst[i];   // remaining time initially burst time
-        completion[i] = 0;         // will calculate later
+        if (arrival[i] < 0 || burst[i] <= 0) {
+            printf("Invalid input");
+            return 0;
+        }
+
+        remaining[i] = burst[i];
+        completion[i] = 0;
     }
 
     printf("Enter Time Quantum: ");
     scanf("%d", &tq);
 
-    // ----- Initialization -----
+    if (tq <= 0) {
+        printf("Invalid time quantum");
+        return 0;
+    }
+
     int time = 0, completed = 0;
-    int queue[100], front = 0, rear = 0;
+    int queue[100000], front = 0, rear = 0;
 
     int visited[n];
+
     for (i = 0; i < n; i++)
         visited[i] = 0;
 
-    // Add processes that arrive at time = 0
     for (i = 0; i < n; i++) {
         if (arrival[i] == 0) {
             queue[rear++] = i;
@@ -40,22 +56,20 @@ int main() {
         }
     }
 
-    // ----- Round Robin Execution -----
     while (completed < n) {
 
-        // If queue is empty → jump to next arrival
         if (front == rear) {
-            int next_arrival = 9999;
+            int next_arrival = 999999;
 
             for (i = 0; i < n; i++) {
-                if (remaining[i] > 0 && arrival[i] > time && arrival[i] < next_arrival) {
+                if (remaining[i] > 0 && !visited[i] &&
+                    arrival[i] < next_arrival) {
                     next_arrival = arrival[i];
                 }
             }
 
             time = next_arrival;
 
-            // Add processes that have arrived now
             for (i = 0; i < n; i++) {
                 if (arrival[i] <= time && remaining[i] > 0 && !visited[i]) {
                     queue[rear++] = i;
@@ -66,7 +80,6 @@ int main() {
 
         int idx = queue[front++];
 
-        // Process execution
         if (remaining[idx] > tq) {
             time += tq;
             remaining[idx] -= tq;
@@ -77,7 +90,6 @@ int main() {
             completed++;
         }
 
-        // Add processes that have arrived during execution
         for (i = 0; i < n; i++) {
             if (arrival[i] <= time && remaining[i] > 0 && !visited[i]) {
                 queue[rear++] = i;
@@ -85,16 +97,15 @@ int main() {
             }
         }
 
-        // If current process is not finished → push back to queue
         if (remaining[idx] > 0) {
             queue[rear++] = idx;
         }
     }
 
-    // ----- Calculate Waiting & Turnaround Time -----
     float total_wt = 0, total_tat = 0;
 
     printf("\nProcess\tArrival\tBurst\tCompletion\tTurnaround\tWaiting\n");
+
     for (i = 0; i < n; i++) {
         turnaround[i] = completion[i] - arrival[i];
         waiting[i] = turnaround[i] - burst[i];
